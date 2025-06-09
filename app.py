@@ -49,13 +49,11 @@ data = {
 
 df = pd.DataFrame(data)
 mlb = MultiLabelBinarizer()
-X = mlb.fit_transform(df["Síntomas"]) # Esto se recalcula con los nuevos síntomas
+X = mlb.fit_transform(df["Síntomas"])
 y = df["Enfermedad"]
 
 modelo = RandomForestClassifier(n_estimators=100, random_state=42)
 modelo.fit(X, y)
-
-# ... (El resto de tu código en app.py permanece EXACTAMENTE igual) ...
 
 def corregir_sintomas(sintomas_usuario):
     sintomas_usuario = sintomas_usuario.lower().split(", ")
@@ -72,7 +70,7 @@ def verificar_tendencia_google(enfermedad, ubicacion):
         region = "MX" if "México" in ubicacion else ""
         pytrends.build_payload([enfermedad], geo=region, timeframe="today 3-m")
         data = pytrends.interest_over_time()
-        
+
         if not data.empty and data[enfermedad].sum() > 0:
             return f"📊 {enfermedad} ha sido tendencia en {ubicacion} recientemente."
         else:
@@ -129,7 +127,7 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
         enfermedad_info = df[df["Enfermedad"] == enfermedad_predicha].iloc[0]
         tendencia_google = verificar_tendencia_google(enfermedad_predicha, ubicacion)
         estado_peso = calcular_imc(peso, altura)
-        
+
         # --- Detección de brotes por ubicación y viajes ---
         brotes_en_ubicacion = detectar_brotes_ubicacion(ubicacion)
         brotes_por_viajes = detectar_brotes_viajes(viajes)
@@ -143,7 +141,7 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
         # ----------------------------------------------------
 
         emergencia = "🔴 ¡Emergencia médica! 🚨" if enfermedad_info["Emergencia"] else "🟢 No es emergencia inmediata."
-        
+
         return (
             f"👤 {nombre}, aquí está tu diagnóstico:\n"
             f"📝 Síntomas reconocidos: {', '.join(sintomas_usuario)}\n"
@@ -155,12 +153,17 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
             f"{tendencia_google}\n"
             f"{emergencia}"
         )
-    except:
-        return f"⚠ {nombre}, no se encontró una coincidencia exacta. Consulta a un médico."
+    except Exception as e: # Captura la excepción para verla
+        print(f"Error en diagnosticar: {e}") # Imprime el error en los logs
+        return f"⚠ {nombre}, no se encontró una coincidencia exacta o hubo un error en el diagnóstico. Consulta a un médico. (Error: {e})" # Mensaje más detallado para debug
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     resultado = ""
+    # Mueve la definición de sintomas_disponibles aquí, fuera del bloque POST
+    # para que esté disponible para solicitudes GET
+    sintomas_disponibles = sorted(list(mlb.classes_))
+
     if request.method == "POST":
         nombre = request.form["nombre"]
         sintomas = request.form["sintomas"]
@@ -173,7 +176,8 @@ def index():
 
         resultado = diagnosticar(nombre, sintomas, edad, sexo, peso, altura, ubicacion, viajes)
 
-    return render_template("index.html", resultado=resultado)
+    # Pasa la lista de síntomas a la plantilla
+    return render_template("index.html", resultado=resultado, sintomas_disponibles=sintomas_disponibles)
 
 if __name__ == "__main__":
     app.run(debug=True)
