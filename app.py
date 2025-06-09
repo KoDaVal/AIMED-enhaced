@@ -8,21 +8,21 @@ from pytrends.request import TrendReq
 app = Flask(__name__)
 pytrends = TrendReq(hl="es-MX", tz=360)
 
-# 📌 Base de datos de enfermedades
+# 📌 Base de datos de enfermedades MEJORADA
 data = {
     "Enfermedad": [
-        "Gripe", "Covid-19", "Alergia", "Gastroenteritis", "Bronquitis", 
+        "Gripe", "Covid-19", "Alergia", "Gastroenteritis", "Bronquitis",
         "Neumonía", "Infarto", "Dengue"
     ],
     "Síntomas": [
-        ["fiebre", "tos", "dolor de cabeza", "estornudos"],
-        ["fiebre", "tos seca", "perdida del olfato", "perdida del gusto", "dificultad para respirar", "fatiga"],
-        ["estornudos", "ojos rojos", "picazón", "congestión nasal"],
-        ["diarrea", "dolor de estómago", "náuseas", "vómitos", "dolor abdominal"],
-        ["tos seca", "tos con flema", "dolor en el pecho", "fatiga"],
-        ["fiebre alta", "escalofríos", "dificultad para respirar", "dolor al respirar"],
-        ["dolor en el pecho", "sudor frío", "mareos", "náuseas", "Falta de aire"],
-        ["fiebre alta", "dolor muscular", "erupción en la piel", "dolor en las articulaciones"],
+        ["fiebre", "tos", "dolor de cabeza", "estornudos", "dolor de garganta", "escalofríos", "dolor muscular", "fatiga", "congestión nasal", "secreción nasal"], # Gripe
+        ["fiebre", "tos seca", "perdida del olfato", "perdida del gusto", "dificultad para respirar", "fatiga", "dolor de garganta", "dolor de cabeza", "dolor muscular", "escalofríos", "congestión nasal", "náuseas", "vómitos", "diarrea", "erupción en la piel", "dolor en el pecho", "falta de aire"], # Covid-19
+        ["estornudos", "ojos rojos", "picazón", "congestión nasal", "secreción nasal", "lagrimeo", "irritación de ojos", "picazón de garganta"], # Alergia
+        ["diarrea", "dolor de estómago", "náuseas", "vómitos", "dolor abdominal", "calambres abdominales", "pérdida de apetito", "deshidratación"], # Gastroenteritis
+        ["tos seca", "tos con flema", "dolor en el pecho", "fatiga", "dificultad para respirar", "sibilancias", "opresión en el pecho", "fiebre leve", "escalofríos"], # Bronquitis
+        ["fiebre alta", "escalofríos", "dificultad para respirar", "dolor al respirar", "tos con flema", "tos productiva", "dolor en el pecho", "fatiga", "sudoración", "confusión (en ancianos)"], # Neumonía
+        ["dolor en el pecho", "sudor frío", "mareos", "náuseas", "Falta de aire", "dolor en el brazo izquierdo", "dolor en la mandíbula", "dolor en la espalda", "malestar en el pecho", "presión en el pecho", "ardor en el pecho"], # Infarto
+        ["fiebre alta", "dolor muscular", "erupción en la piel", "dolor en las articulaciones", "dolor detrás de los ojos", "cansancio extremo", "náuseas", "vómitos", "sangrado leve (encías, nariz)"] # Dengue
     ],
     "Emergencia": [False, False, False, False, False, True, True, False],
     "Descripcion": [
@@ -49,11 +49,13 @@ data = {
 
 df = pd.DataFrame(data)
 mlb = MultiLabelBinarizer()
-X = mlb.fit_transform(df["Síntomas"])
+X = mlb.fit_transform(df["Síntomas"]) # Esto se recalcula con los nuevos síntomas
 y = df["Enfermedad"]
 
 modelo = RandomForestClassifier(n_estimators=100, random_state=42)
 modelo.fit(X, y)
+
+# ... (El resto de tu código en app.py permanece EXACTAMENTE igual) ...
 
 def corregir_sintomas(sintomas_usuario):
     sintomas_usuario = sintomas_usuario.lower().split(", ")
