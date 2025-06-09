@@ -56,14 +56,27 @@ modelo = RandomForestClassifier(n_estimators=100, random_state=42)
 modelo.fit(X, y)
 
 def corregir_sintomas(sintomas_usuario):
-    sintomas_usuario = sintomas_usuario.lower().split(", ")
-    # Validación con umbral para evitar falsos positivos:
-    sintomas_corregidos = []
-    for s in sintomas_usuario:
-        mejor, score = process.extractOne(s, mlb.classes_)
-        if score >= 70:
-            sintomas_corregidos.append(mejor)
-    return sintomas_corregidos
+    sintomas_usuario_input = sintomas_usuario.lower().split(", ") # Renombro para diferenciar
+    sintomas_reconocidos = [] # Esta será la lista final que usaremos
+    for s_input in sintomas_usuario_input:
+        # Asegúrate de que mlb.classes_ contenga todos los síntomas posibles
+        # Si un síntoma no está en mlb.classes_, fuzzywuzzy no lo encontrará.
+        if s_input.strip() == "": # Evita procesar cadenas vacías si hay comas extra
+            continue
+
+        # Buscar la mejor coincidencia en la base de datos de síntomas conocidos por el modelo
+        mejor_coincidencia, score = process.extractOne(s_input, mlb.classes_)
+
+        # Si el score es suficientemente alto, lo consideramos reconocido.
+        # Puedes ajustar este umbral (ej. 60, 50) si quieres ser menos estricto.
+        if score >= 70: # O el umbral que decidas, si quieres más síntomas "reconocidos"
+            sintomas_reconocidos.append(mejor_coincidencia)
+        else:
+            # Opcional: Si quieres ver los que NO se reconocieron, puedes imprimirlo aquí
+            # print(f"DEBUG: '{s_input}' no reconocido (score: {score})")
+            pass # No se añade si el score es bajo
+
+    return sintomas_reconocidos
 
 def verificar_tendencia_google(enfermedad, ubicacion):
     try:
