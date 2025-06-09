@@ -1,17 +1,18 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diagnóstico Médico</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <!-- Choices.js CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="text-center">🔍 AI-MED – Artificial Intelligence Medical Diagnosis</h1>
         <p class="text-center">Ingresa tus síntomas y datos para obtener un diagnóstico.</p>
-
+        
         <form method="POST" class="mt-4">
             <div class="mb-3">
                 <label for="nombre" class="form-label">Nombre:</label>
@@ -21,9 +22,33 @@
             <div class="mb-3">
                 <label for="sintomas" class="form-label">Síntomas:</label>
                 <select id="sintomas" class="form-select" multiple required>
-                    {% for sintoma in sintomas_disponibles %}
-                    <option value="{{ sintoma }}">{{ sintoma.capitalize() }}</option>
-                    {% endfor %}
+                    <option value="fiebre">Fiebre</option>
+                    <option value="tos">Tos</option>
+                    <option value="dolor de cabeza">Dolor de cabeza</option>
+                    <option value="estornudos">Estornudos</option>
+                    <option value="tos seca">Tos seca</option>
+                    <option value="perdida del olfato">Pérdida del olfato</option>
+                    <option value="perdida del gusto">Pérdida del gusto</option>
+                    <option value="dificultad para respirar">Dificultad para respirar</option>
+                    <option value="fatiga">Fatiga</option>
+                    <option value="ojos rojos">Ojos rojos</option>
+                    <option value="picazón">Picazón</option>
+                    <option value="congestión nasal">Congestión nasal</option>
+                    <option value="diarrea">Diarrea</option>
+                    <option value="dolor de estómago">Dolor de estómago</option>
+                    <option value="náuseas">Náuseas</option>
+                    <option value="vómitos">Vómitos</option>
+                    <option value="dolor abdominal">Dolor abdominal</option>
+                    <option value="tos con flema">Tos con flema</option>
+                    <option value="dolor en el pecho">Dolor en el pecho</option>
+                    <option value="escalofríos">Escalofríos</option>
+                    <option value="sudor frío">Sudor frío</option>
+                    <option value="mareos">Mareos</option>
+                    <option value="falta de aire">Falta de aire</option>
+                    <option value="dolor muscular">Dolor muscular</option>
+                    <option value="erupción en la piel">Erupción en la piel</option>
+                    <option value="dolor en las articulaciones">Dolor en las articulaciones</option>
+                    <option value="fiebre alta">Fiebre Alta Mayor a 38.9</option>
                 </select>
                 <input type="hidden" id="sintomas_hidden" name="sintomas">
             </div>
@@ -72,6 +97,7 @@
         {% endif %}
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
@@ -86,7 +112,7 @@
         });
 
         document.querySelector("form").addEventListener("submit", function() {
-            const sintomasSeleccionados = choices.getValue(true).map(item => item.value).join(", "); // Asegúrate de obtener solo el valor
+            const sintomasSeleccionados = choices.getValue(true).join(", ");
             document.getElementById("sintomas_hidden").value = sintomasSeleccionados;
         });
     </script>
