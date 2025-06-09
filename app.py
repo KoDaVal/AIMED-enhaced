@@ -9,20 +9,22 @@ app = Flask(__name__)
 pytrends = TrendReq(hl="es-MX", tz=360)
 
 # 📌 Base de datos de enfermedades MEJORADA
+# Esta base de datos ha sido ampliada para incluir más síntomas distintivos
+# y variaciones comunes que ayudan al modelo a diferenciar mejor las enfermedades.
 data = {
     "Enfermedad": [
         "Gripe", "Covid-19", "Alergia", "Gastroenteritis", "Bronquitis",
         "Neumonía", "Infarto", "Dengue"
     ],
     "Síntomas": [
-        ["fiebre", "tos", "dolor de cabeza", "estornudos", "dolor de garganta", "escalofríos", "dolor muscular", "fatiga", "congestión nasal", "secreción nasal"], # Gripe
-        ["fiebre", "tos seca", "perdida del olfato", "perdida del gusto", "dificultad para respirar", "fatiga", "dolor de garganta", "dolor de cabeza", "dolor muscular", "escalofríos", "congestión nasal", "náuseas", "vómitos", "diarrea", "erupción en la piel", "dolor en el pecho", "falta de aire"], # Covid-19
-        ["estornudos", "ojos rojos", "picazón", "congestión nasal", "secreción nasal", "lagrimeo", "irritación de ojos", "picazón de garganta"], # Alergia
-        ["diarrea", "dolor de estómago", "náuseas", "vómitos", "dolor abdominal", "calambres abdominales", "pérdida de apetito", "deshidratación"], # Gastroenteritis
-        ["tos seca", "tos con flema", "dolor en el pecho", "fatiga", "dificultad para respirar", "sibilancias", "opresión en el pecho", "fiebre leve", "escalofríos"], # Bronquitis
-        ["fiebre alta", "escalofríos", "dificultad para respirar", "dolor al respirar", "tos con flema", "tos productiva", "dolor en el pecho", "fatiga", "sudoración", "confusión (en ancianos)"], # Neumonía
-        ["dolor en el pecho", "sudor frío", "mareos", "náuseas", "Falta de aire", "dolor en el brazo izquierdo", "dolor en la mandíbula", "dolor en la espalda", "malestar en el pecho", "presión en el pecho", "ardor en el pecho"], # Infarto
-        ["fiebre alta", "dolor muscular", "erupción en la piel", "dolor en las articulaciones", "dolor detrás de los ojos", "cansancio extremo", "náuseas", "vómitos", "sangrado leve (encías, nariz)"] # Dengue
+        ["fiebre", "tos", "dolor de cabeza", "estornudos", "dolor de garganta", "escalofríos", "dolor muscular", "fatiga", "congestión nasal", "secreción nasal", "malestar general"], # Gripe
+        ["fiebre", "tos seca", "perdida del olfato", "perdida del gusto", "dificultad para respirar", "fatiga", "dolor de garganta", "dolor de cabeza", "dolor muscular", "escalofríos", "congestión nasal", "náuseas", "vómitos", "diarrea", "erupción en la piel", "dolor en el pecho", "falta de aire", "dolor articular"], # Covid-19
+        ["estornudos", "ojos rojos", "picazón", "congestión nasal", "secreción nasal", "lagrimeo", "irritación de ojos", "picazón de garganta", "picazón de nariz", "urticaria", "erupciones cutaneas"], # Alergia
+        ["diarrea", "dolor de estómago", "náuseas", "vómitos", "dolor abdominal", "calambres abdominales", "pérdida de apetito", "deshidratación", "fiebre leve", "malestar estomacal"], # Gastroenteritis
+        ["tos seca", "tos con flema", "dolor en el pecho", "fatiga", "dificultad para respirar", "sibilancias", "opresión en el pecho", "fiebre leve", "escalofríos", "cansancio", "respiración ruidosa"], # Bronquitis
+        ["fiebre alta", "escalofríos", "dificultad para respirar", "dolor al respirar", "tos con flema", "tos productiva", "dolor en el pecho", "fatiga", "sudoración", "confusión (en ancianos)", "cianosis", "esputo con sangre"], # Neumonía
+        ["dolor en el pecho", "sudor frío", "mareos", "náuseas", "Falta de aire", "dolor en el brazo izquierdo", "dolor en la mandíbula", "dolor en la espalda", "malestar en el pecho", "presión en el pecho", "ardor en el pecho", "desmayo", "palpitaciones"], # Infarto
+        ["fiebre alta", "dolor muscular", "erupción en la piel", "dolor en las articulaciones", "dolor detrás de los ojos", "cansancio extremo", "náuseas", "vómitos", "sangrado leve (encías, nariz)", "dolor de huesos", "petequias", "cefalea"] # Dengue
     ],
     "Emergencia": [False, False, False, False, False, True, True, False],
     "Descripcion": [
@@ -47,51 +49,71 @@ data = {
     ]
 }
 
+# Creación del DataFrame de Pandas
 df = pd.DataFrame(data)
+
+# Inicialización y ajuste del MultiLabelBinarizer con los síntomas de la base de datos
 mlb = MultiLabelBinarizer()
-X = mlb.fit_transform(df["Síntomas"])
+X = mlb.fit_transform(df["Síntomas"]) # 'mlb.classes_' contendrá todos los síntomas únicos del dataset
 y = df["Enfermedad"]
 
+# Entrenamiento del modelo de Random Forest Classifier
 modelo = RandomForestClassifier(n_estimators=100, random_state=42)
 modelo.fit(X, y)
 
-def corregir_sintomas(sintomas_usuario):
-    sintomas_usuario_input = sintomas_usuario.lower().split(", ") # Renombro para diferenciar
-    sintomas_reconocidos = [] # Esta será la lista final que usaremos
-    for s_input in sintomas_usuario_input:
-        # Asegúrate de que mlb.classes_ contenga todos los síntomas posibles
-        # Si un síntoma no está en mlb.classes_, fuzzywuzzy no lo encontrará.
-        if s_input.strip() == "": # Evita procesar cadenas vacías si hay comas extra
+def corregir_sintomas(sintomas_usuario_input_str):
+    """
+    Procesa la cadena de síntomas ingresados por el usuario, intentando
+    encontrar coincidencias con los síntomas conocidos por el modelo de IA.
+    Solo los síntomas con un score de coincidencia suficiente serán "reconocidos".
+    """
+    sintomas_usuario_parsed = sintomas_usuario_input_str.lower().split(", ")
+    sintomas_reconocidos_para_ia = [] # Lista que contendrá los síntomas que la IA 'entiende'
+    
+    for s_input in sintomas_usuario_parsed:
+        s_input_cleaned = s_input.strip()
+        if not s_input_cleaned: # Saltar entradas vacías si hay comas adicionales
             continue
 
-        # Buscar la mejor coincidencia en la base de datos de síntomas conocidos por el modelo
-        mejor_coincidencia, score = process.extractOne(s_input, mlb.classes_)
+        # Busca la mejor coincidencia del síntoma del usuario en la base de datos de síntomas del modelo
+        # (mlb.classes_ contiene todos los síntomas únicos extraídos del DataFrame 'data')
+        mejor_coincidencia, score = process.extractOne(s_input_cleaned, mlb.classes_)
+        
+        # Umbral de coincidencia: si el score es bajo, el síntoma no se considera "reconocido".
+        # Puedes ajustar este umbral (ej. 60, 50) si quieres que la IA sea más o menos estricta
+        # al reconocer síntomas ingresados por el usuario.
+        if score >= 60: # Ajustado a 60 para ser un poco menos estricto que 70
+            sintomas_reconocidos_para_ia.append(mejor_coincidencia)
+        # Opcional: Para depuración, puedes imprimir los que NO se reconocieron en los logs
+        # else:
+            # print(f"DEBUG (corregir_sintomas): '{s_input_cleaned}' no reconocido (score: {score}) - Mejor coincidencia en la base de datos: '{mejor_coincidencia}'")
 
-        # Si el score es suficientemente alto, lo consideramos reconocido.
-        # Puedes ajustar este umbral (ej. 60, 50) si quieres ser menos estricto.
-        if score >= 70: # O el umbral que decidas, si quieres más síntomas "reconocidos"
-            sintomas_reconocidos.append(mejor_coincidencia)
-        else:
-            # Opcional: Si quieres ver los que NO se reconocieron, puedes imprimirlo aquí
-            # print(f"DEBUG: '{s_input}' no reconocido (score: {score})")
-            pass # No se añade si el score es bajo
-
-    return sintomas_reconocidos
+    return sintomas_reconocidos_para_ia
 
 def verificar_tendencia_google(enfermedad, ubicacion):
+    """
+    Verifica si una enfermedad es tendencia en Google Trends para una ubicación específica.
+    """
     try:
-        region = "MX" if "México" in ubicacion else ""
+        region = "MX" if "México" in ubicacion else "" # Simplificación: si contiene "México", asume región MX
         pytrends.build_payload([enfermedad], geo=region, timeframe="today 3-m")
         data = pytrends.interest_over_time()
-
+        
         if not data.empty and data[enfermedad].sum() > 0:
             return f"📊 {enfermedad} ha sido tendencia en {ubicacion} recientemente."
         else:
             return f"📉 No hay tendencias recientes sobre {enfermedad} en {ubicacion}."
-    except:
+    except Exception as e: # Captura la excepción para evitar que falle toda la app
+        print(f"Error al verificar tendencia de Google para {enfermedad}: {e}")
         return f"⚠ No se pudo obtener información de Google Trends para {enfermedad}."
 
 def calcular_imc(peso, altura):
+    """
+    Calcula el Índice de Masa Corporal (IMC) y lo clasifica.
+    Peso en kg, Altura en cm.
+    """
+    if altura == 0: # Evitar división por cero
+        return "IMC: Error - Altura no puede ser cero."
     imc = peso / ((altura / 100) ** 2)
     if imc < 18.5:
         return f"IMC: {imc:.2f} - Bajo peso"
@@ -104,60 +126,88 @@ def calcular_imc(peso, altura):
 
 # --- NUEVAS FUNCIONES: Detección de brotes por ubicación y viajes ---
 def detectar_brotes_ubicacion(ubicacion):
-    # Lista de enfermedades a monitorear
-    enfermedades = ["Covid-19", "Dengue", "Gripe", "Neumonía"]
-    brotes = []
+    """
+    Detecta tendencias de brotes de enfermedades específicas en una ubicación.
+    Utiliza Google Trends a nivel de ciudad.
+    """
+    enfermedades_a_monitorear = ["Covid-19", "Dengue", "Gripe", "Neumonía"]
+    brotes_detectados = []
     try:
-        for enfermedad in enfermedades:
+        for enfermedad in enfermedades_a_monitorear:
+            # Para Google Trends a nivel de ciudad, 'geo' debe estar vacío para buscar por resolución de ciudad
             pytrends.build_payload([enfermedad], geo="", timeframe="now 7-d")
+            # inc_low_vol=True para incluir datos de bajo volumen, crucial para ciudades más pequeñas
             tendencias = pytrends.interest_by_region(resolution='CITY', inc_low_vol=True, inc_geo_code=False)
+            
             if not tendencias.empty:
-                # Se obtienen las ciudades con mayor interés por la enfermedad
-                tendencias = tendencias.sort_values(by=enfermedad, ascending=False)
-                top_ciudades = [c.lower() for c in tendencias.head(20).index]
+                # Obtiene las ciudades con mayor interés por la enfermedad (top 20)
+                tendencias_ordenadas = tendencias.sort_values(by=enfermedad, ascending=False)
+                top_ciudades = [c.lower() for c in tendencias_ordenadas.head(20).index]
+                
+                # Comprueba si la ubicación del usuario está en el top de ciudades con tendencia
                 if ubicacion.lower() in top_ciudades:
-                    brotes.append(enfermedad)
-    except:
-        pass
-    return brotes
+                    brotes_detectados.append(enfermedad)
+    except Exception as e:
+        print(f"Error al detectar brotes en {ubicacion}: {e}")
+        pass # Ignorar errores de pytrends para no detener el diagnóstico
+    return brotes_detectados
 
 def detectar_brotes_viajes(viajes):
+    """
+    Detecta brotes en los destinos de viaje recientes del usuario.
+    """
     destinos = [v.strip().lower() for v in viajes if v.strip().lower() != "ninguno"]
-    brotes_detectados = {}
+    brotes_por_viajes_dict = {}
     for destino in destinos:
         brotes = detectar_brotes_ubicacion(destino)
         if brotes:
-            brotes_detectados[destino] = brotes
-    return brotes_detectados
+            brotes_por_viajes_dict[destino] = brotes
+    return brotes_por_viajes_dict
 # -------------------------------------------------------
 
-def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, viajes):
-    sintomas_usuario = corregir_sintomas(sintomas_usuario)
-    sintomas_numericos = mlb.transform([sintomas_usuario])
+def diagnosticar(nombre, sintomas_usuario_raw, edad, sexo, peso, altura, ubicacion, viajes):
+    """
+    Realiza el diagnóstico completo basándose en los síntomas y datos del usuario.
+    """
+    # Procesa y reconoce los síntomas ingresados por el usuario
+    sintomas_que_ia_reconocio = corregir_sintomas(sintomas_usuario_raw)
+    
+    # Transforma los síntomas reconocidos a formato numérico para el modelo
+    # Si la lista de sintomas_que_ia_reconocio está vacía, mlb.transform([]) creará un array de ceros
+    sintomas_numericos = mlb.transform([sintomas_que_ia_reconocio])
 
     try:
+        # Realiza la predicción de la enfermedad
         enfermedad_predicha = modelo.predict(sintomas_numericos)[0]
+        
+        # Obtiene la información detallada de la enfermedad predicha
         enfermedad_info = df[df["Enfermedad"] == enfermedad_predicha].iloc[0]
+        
+        # Obtiene información adicional
         tendencia_google = verificar_tendencia_google(enfermedad_predicha, ubicacion)
         estado_peso = calcular_imc(peso, altura)
-
-        # --- Detección de brotes por ubicación y viajes ---
+        
+        # Detección de brotes
         brotes_en_ubicacion = detectar_brotes_ubicacion(ubicacion)
         brotes_por_viajes = detectar_brotes_viajes(viajes)
 
+        # Formatea las alertas de brotes
         alertas_brotes = ""
         if brotes_en_ubicacion:
             alertas_brotes += f"📍 En {ubicacion.title()} hay tendencia reciente de: {', '.join(brotes_en_ubicacion)}.\n"
         if brotes_por_viajes:
             for lugar, enfermedades in brotes_por_viajes.items():
                 alertas_brotes += f"✈️ En tu destino reciente '{lugar.title()}' se reporta: {', '.join(enfermedades)}.\n"
-        # ----------------------------------------------------
-
+        
+        # Determina si es una emergencia
         emergencia = "🔴 ¡Emergencia médica! 🚨" if enfermedad_info["Emergencia"] else "🟢 No es emergencia inmediata."
-
+        
+        # Construye el mensaje de resultado final
         return (
             f"👤 {nombre}, aquí está tu diagnóstico:\n"
-            f"📝 Síntomas reconocidos: {', '.join(sintomas_usuario)}\n"
+            # Muestra los síntomas que la IA realmente usó.
+            # Si la lista está vacía, muestra un mensaje claro al usuario.
+            f"📝 Síntomas reconocidos: {', '.join(sintomas_que_ia_reconocio) if sintomas_que_ia_reconocio else 'Ninguno de los síntomas ingresados fue reconocido por la IA con suficiente certeza.'}\n"
             f"{alertas_brotes}"
             f"📌 Enfermedad probable: {enfermedad_predicha}\n"
             f"ℹ {enfermedad_info['Descripcion']}\n"
@@ -166,20 +216,27 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
             f"{tendencia_google}\n"
             f"{emergencia}"
         )
-    except Exception as e: # Captura la excepción para verla
-        print(f"Error en diagnosticar: {e}") # Imprime el error en los logs
-        return f"⚠ {nombre}, no se encontró una coincidencia exacta o hubo un error en el diagnóstico. Consulta a un médico. (Error: {e})" # Mensaje más detallado para debug
+    except Exception as e:
+        # Captura cualquier error inesperado durante el diagnóstico y lo imprime en los logs
+        print(f"Error inesperado en la función diagnosticar: {e}")
+        return f"⚠ {nombre}, no se pudo completar el diagnóstico debido a un error interno. Por favor, consulta a un médico. (Detalle: {e})"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
+    """
+    Ruta principal de la aplicación Flask.
+    Maneja las solicitudes GET (para cargar la página) y POST (para enviar el formulario).
+    """
     resultado = ""
-    # Mueve la definición de sintomas_disponibles aquí, fuera del bloque POST
-    # para que esté disponible para solicitudes GET
+    # Esta línea se ha movido fuera del bloque POST para asegurar que 'sintomas_disponibles'
+    # siempre esté definida y pueda pasarse a la plantilla, incluso en una solicitud GET inicial.
     sintomas_disponibles = sorted(list(mlb.classes_))
 
     if request.method == "POST":
+        # Obtiene los datos del formulario
         nombre = request.form["nombre"]
-        sintomas = request.form["sintomas"]
+        # 'sintomas' se recibe como una cadena separada por comas desde el campo oculto
+        sintomas_raw = request.form["sintomas"] 
         edad = int(request.form["edad"])
         sexo = request.form["sexo"]
         peso = float(request.form["peso"])
@@ -187,10 +244,15 @@ def index():
         ubicacion = request.form["ubicacion"]
         viajes = request.form["viajes"].split(", ") if request.form["viajes"] else []
 
-        resultado = diagnosticar(nombre, sintomas, edad, sexo, peso, altura, ubicacion, viajes)
+        # Llama a la función de diagnóstico
+        resultado = diagnosticar(nombre, sintomas_raw, edad, sexo, peso, altura, ubicacion, viajes)
 
-    # Pasa la lista de síntomas a la plantilla
+    # Renderiza la plantilla index.html, pasando el resultado del diagnóstico
+    # y la lista de síntomas disponibles para el selector de Choices.js.
     return render_template("index.html", resultado=resultado, sintomas_disponibles=sintomas_disponibles)
 
 if __name__ == "__main__":
+    # Ejecuta la aplicación Flask en modo de depuración.
+    # 'debug=True' permite recarga automática y muestra errores detallados,
+    # ideal para desarrollo local. No usar en producción.
     app.run(debug=True)
