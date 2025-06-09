@@ -11,11 +11,12 @@ pytrends = TrendReq(hl="es-MX", tz=360)
 # 📌 Base de datos de enfermedades - SÍNTOMAS Y RECOMENDACIONES MEJORADAS
 # Se han ampliado las listas de síntomas para una mayor cobertura y diferenciación.
 # Las recomendaciones se han revisado para ser más detalladas y médicamente apropiadas.
+# ¡CORRECCIÓN! Todas las listas ahora tienen 8 elementos para que coincidan.
 data = {
     "Enfermedad": [
         "Gripe", "Covid-19", "Alergia", "Gastroenteritis", "Bronquitis", 
         "Neumonía", "Infarto", "Dengue"
-    ],
+    ], # Longitud: 8
     "Síntomas": [
         ["fiebre", "tos", "dolor de cabeza", "estornudos", "dolor de garganta", "escalofríos", "dolor muscular", "fatiga", "congestión nasal", "secreción nasal", "malestar general", "dolor de cuerpo", "voz ronca"], # Gripe
         ["fiebre", "tos seca", "perdida del olfato", "perdida del gusto", "dificultad para respirar", "fatiga", "dolor de garganta", "dolor de cabeza", "dolor muscular", "escalofríos", "congestión nasal", "náuseas", "vómitos", "diarrea", "erupción en la piel", "dolor en el pecho", "falta de aire", "dolor articular", "confusión", "dolor abdominal"], # Covid-19
@@ -25,8 +26,8 @@ data = {
         ["fiebre alta", "escalofríos", "dificultad para respirar", "dolor al respirar", "tos con flema", "tos productiva", "dolor en el pecho", "fatiga", "sudoración", "confusión (en ancianos)", "cianosis", "esputo con sangre", "dolor de cabeza", "dolor muscular", "pérdida de apetito"], # Neumonía
         ["dolor en el pecho", "sudor frío", "mareos", "náuseas", "Falta de aire", "dolor en el brazo izquierdo", "dolor en la mandíbula", "dolor en la espalda", "malestar en el pecho", "presión en el pecho", "ardor en el pecho", "desmayo", "palpitaciones", "dolor en el cuello", "debilidad"], # Infarto
         ["fiebre alta", "dolor muscular", "erupción en la piel", "dolor en las articulaciones", "dolor detrás de los ojos", "cansancio extremo", "náuseas", "vómitos", "sangrado leve (encías, nariz)", "dolor de huesos", "petequias", "cefalea", "fatiga severa", "pérdida de apetito", "ganglios linfáticos inflamados"] # Dengue
-    ],
-    "Emergencia": [False, False, False, False, False, True, True, False],
+    ], # Longitud: 8
+    "Emergencia": [False, False, False, False, False, True, True, False], # Longitud: 8
     "Descripcion": [
         "La gripe es una infección viral respiratoria que causa fiebre, tos, dolor muscular y congestión. Es estacional y se transmite fácilmente.",
         "El Covid-19 es una enfermedad respiratoria causada por el virus SARS-CoV-2, con síntomas variables que pueden incluir fiebre, tos seca, pérdida del olfato/gusto y dificultad para respirar.",
@@ -34,10 +35,9 @@ data = {
         "La gastroenteritis es una inflamación del estómago y el intestino, generalmente viral o bacteriana, que provoca diarrea, dolor abdominal, náuseas y vómitos.",
         "La bronquitis es una inflamación de los bronquios, los conductos que llevan aire a los pulmones, causando tos persistente con o sin flema. Puede ser aguda o crónica.",
         "La neumonía es una infección pulmonar grave que inflama los sacos de aire en uno o ambos pulmones, llenándolos de líquido o pus, lo que dificulta la respiración.",
-        "El infarto de miocardio (ataque cardíaco) ocurre cuando el flujo sanguíneo al corazón se bloquea repentinamente, causando daño al músculo cardíaco por falta de oxígeno.",
-        "Ante la sospecha de un infarto, llama INMEDIATAMENTE al número de emergencias local (ej. 911 en México). NO conduzcas. Mastica una aspirina si te lo indican los servicios de emergencia (si no eres alérgico). Mantén la calma y espera la ayuda médica. ⚠️ ¡Cada minuto cuenta en esta emergencia médica!",
-        "El dengue es una enfermedad viral transmitida por la picadura del mosquito Aedes aegypti, caracterizada por fiebre alta, dolores intensos de cabeza, musculares y articulares, y erupción cutánea. Puede complicarse en casos severos."
-    ],
+        "El infarto de miocardio (ataque cardíaco) ocurre cuando el flujo sanguíneo al corazón se bloquea repentinamente, causando daño al músculo cardíaco por falta de oxígeno.", # Descripción de Infarto
+        "El dengue es una enfermedad viral transmitida por la picadura del mosquito Aedes aegypti, caracterizada por fiebre alta, dolores intensos de cabeza, musculares y articulares, y erupción cutánea. Puede complicarse en casos severos." # Descripción de Dengue
+    ], # Longitud: 8 (¡Ahora correcta!)
     "Recomendacion": [
         "Para la gripe, se recomienda reposo, hidratación abundante y analgésicos como paracetamol o ibuprofeno para la fiebre y el dolor. Evita el contacto cercano para prevenir contagios. ⚠️ Consulta a un médico si la fiebre persiste más de 3 días, si hay dificultad respiratoria, dolor en el pecho o empeoramiento de los síntomas.",
         "Para Covid-19, se aconseja aislamiento para evitar la propagación. Monitorea tus síntomas y mantente hidratado. Utiliza paracetamol para la fiebre. ⚠️ Busca atención médica inmediata si experimentas dificultad para respirar, dolor persistente en el pecho, confusión nueva o coloración azulada en labios/cara.",
@@ -47,7 +47,7 @@ data = {
         "Para la neumonía, es crucial buscar atención médica INMEDIATA. Generalmente requiere hospitalización, administración de antibióticos (si es bacteriana), antivirales (si es viral) y oxígeno. El tratamiento es personalizado según la causa y la gravedad. ⚠️ ¡Es una emergencia médica!",
         "Ante la sospecha de un infarto, llama INMEDIATAMENTE al número de emergencias local (ej. 911 en México). NO conduzcas. Mastica una aspirina si te lo indican los servicios de emergencia (si no eres alérgico). Mantén la calma y espera la ayuda médica. ⚠️ ¡Cada minuto cuenta en esta emergencia médica!",
         "Para el dengue, se recomienda reposo absoluto y una hidratación intensa con agua o sueros orales. Controla la fiebre con paracetamol (evita el ibuprofeno y la aspirina por riesgo de sangrado). Monitorea los signos de alarma. ⚠️ Busca atención médica urgente si presentas dolor abdominal intenso, vómitos persistentes, sangrado (encías, nariz), debilidad extrema o dificultad para respirar."
-    ]
+    ] # Longitud: 8
 }
 
 df = pd.DataFrame(data)
@@ -60,11 +60,10 @@ modelo.fit(X, y)
 
 def corregir_sintomas(sintomas_usuario):
     sintomas_usuario = sintomas_usuario.lower().split(", ")
-    # Validación con umbral para evitar falsos positivos:
     sintomas_corregidos = []
     for s in sintomas_usuario:
         mejor, score = process.extractOne(s, mlb.classes_)
-        if score >= 60: # Umbral ajustado para ser menos estricto y reconocer más
+        if score >= 60: # Umbral ajustado
             sintomas_corregidos.append(mejor)
     return sintomas_corregidos
 
@@ -122,8 +121,6 @@ def detectar_brotes_viajes(viajes):
     return brotes_detectados
 
 def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, viajes):
-    # Procesamos los síntomas para la IA, pero la variable 'sintomas_usuario'
-    # sigue siendo la cadena original del formulario para mostrar.
     sintomas_procesados_para_ia = corregir_sintomas(sintomas_usuario) 
     sintomas_numericos = mlb.transform([sintomas_procesados_para_ia])
 
@@ -163,9 +160,6 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
 @app.route("/", methods=["GET", "POST"])
 def index():
     resultado = ""
-    # Esta variable debe estar disponible SIEMPRE, incluso para la primera carga (GET).
-    # Sin esta línea, si el HTML espera 'sintomas_disponibles' para llenar el selector,
-    # Flask daría un error 'NameError' o 'jinja2.exceptions.UndefinedError'.
     sintomas_disponibles = sorted(list(mlb.classes_))
     
     if request.method == "POST":
@@ -180,7 +174,6 @@ def index():
 
         resultado = diagnosticar(nombre, sintomas, edad, sexo, peso, altura, ubicacion, viajes)
 
-    # Ahora 'sintomas_disponibles' siempre se pasa, solucionando el error inicial de carga si se usa en el HTML.
     return render_template("index.html", resultado=resultado, sintomas_disponibles=sintomas_disponibles)
 
 if __name__ == "__main__":
