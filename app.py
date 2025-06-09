@@ -63,10 +63,8 @@ def corregir_sintomas(sintomas_usuario):
     # Validación con umbral para evitar falsos positivos:
     sintomas_corregidos = []
     for s in sintomas_usuario:
-        # Ajustamos el umbral a 60 para que sea un poco menos estricto
-        # y permita que más síntomas se consideren "reconocidos" por la IA para el diagnóstico interno.
         mejor, score = process.extractOne(s, mlb.classes_)
-        if score >= 60: # Umbral ajustado
+        if score >= 60: # Umbral ajustado para ser menos estricto y reconocer más
             sintomas_corregidos.append(mejor)
     return sintomas_corregidos
 
@@ -80,12 +78,14 @@ def verificar_tendencia_google(enfermedad, ubicacion):
             return f"📊 {enfermedad} ha sido tendencia en {ubicacion} recientemente."
         else:
             return f"📉 No hay tendencias recientes sobre {enfermedad} en {ubicacion}."
-    except Exception as e: # Captura la excepción para un mejor manejo en logs
+    except Exception as e:
         print(f"Error en verificar_tendencia_google: {e}")
         return f"⚠ No se pudo obtener información de Google Trends para {enfermedad}."
 
 def calcular_imc(peso, altura):
     imc = peso / ((altura / 100) ** 2)
+    if altura == 0:
+        return "IMC: Error - Altura no puede ser cero."
     if imc < 18.5:
         return f"IMC: {imc:.2f} - Bajo peso"
     elif 18.5 <= imc < 24.9:
@@ -95,9 +95,7 @@ def calcular_imc(peso, altura):
     else:
         return f"IMC: {imc:.2f} - Obesidad"
 
-# --- NUEVAS FUNCIONES: Detección de brotes por ubicación y viajes ---
 def detectar_brotes_ubicacion(ubicacion):
-    # Lista de enfermedades a monitorear
     enfermedades = ["Covid-19", "Dengue", "Gripe", "Neumonía"]
     brotes = []
     try:
@@ -105,12 +103,11 @@ def detectar_brotes_ubicacion(ubicacion):
             pytrends.build_payload([enfermedad], geo="", timeframe="now 7-d")
             tendencias = pytrends.interest_by_region(resolution='CITY', inc_low_vol=True, inc_geo_code=False)
             if not tendencias.empty:
-                # Se obtienen las ciudades con mayor interés por la enfermedad
                 tendencias = tendencias.sort_values(by=enfermedad, ascending=False)
                 top_ciudades = [c.lower() for c in tendencias.head(20).index]
                 if ubicacion.lower() in top_ciudades:
                     brotes.append(enfermedad)
-    except Exception as e: # Captura la excepción para un mejor manejo en logs
+    except Exception as e:
         print(f"Error en detectar_brotes_ubicacion: {e}")
         pass
     return brotes
@@ -123,11 +120,10 @@ def detectar_brotes_viajes(viajes):
         if brotes:
             brotes_detectados[destino] = brotes
     return brotes_detectados
-# -------------------------------------------------------
 
 def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, viajes):
-    # La variable sintomas_usuario ya contiene la cadena de síntomas del formulario.
-    # Esta cadena se procesa para que la IA la use para el diagnóstico.
+    # Procesamos los síntomas para la IA, pero la variable 'sintomas_usuario'
+    # sigue siendo la cadena original del formulario para mostrar.
     sintomas_procesados_para_ia = corregir_sintomas(sintomas_usuario) 
     sintomas_numericos = mlb.transform([sintomas_procesados_para_ia])
 
@@ -137,7 +133,6 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
         tendencia_google = verificar_tendencia_google(enfermedad_predicha, ubicacion)
         estado_peso = calcular_imc(peso, altura)
         
-        # --- Detección de brotes por ubicación y viajes ---
         brotes_en_ubicacion = detectar_brotes_ubicacion(ubicacion)
         brotes_por_viajes = detectar_brotes_viajes(viajes)
 
@@ -147,14 +142,11 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
         if brotes_por_viajes:
             for lugar, enfermedades in brotes_por_viajes.items():
                 alertas_brotes += f"✈️ En tu destino reciente '{lugar.title()}' se reporta: {', '.join(enfermedades)}.\n"
-        # ----------------------------------------------------
 
         emergencia = "🔴 ¡Emergencia médica! 🚨" if enfermedad_info["Emergencia"] else "🟢 No es emergencia inmediata."
         
         return (
             f"👤 {nombre}, aquí está tu diagnóstico:\n"
-            # Esta línea mostrará los síntomas que fueron "reconocidos" y procesados por la IA.
-            # Si fuzzywuzzy con score >= 60 no encuentra coincidencias, esta lista puede estar vacía.
             f"📝 Síntomas reconocidos: {', '.join(sintomas_procesados_para_ia)}\n" 
             f"{alertas_brotes}"
             f"📌 Enfermedad probable: {enfermedad_predicha}\n"
@@ -164,15 +156,16 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
             f"{tendencia_google}\n"
             f"{emergencia}"
         )
-    except Exception as e: # Captura la excepción para verla en logs
-        print(f"Error inesperado en diagnosticar: {e}") # Imprime el error en los logs
+    except Exception as e:
+        print(f"Error inesperado en diagnosticar: {e}")
         return f"⚠ {nombre}, no se encontró una coincidencia exacta. Consulta a un médico. (Detalle: {e})"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     resultado = ""
-    # Esta línea se ha movido fuera del bloque POST para asegurar que 'sintomas_disponibles'
-    # siempre esté definida y pueda pasarse a la plantilla, incluso en una solicitud GET inicial.
+    # Esta variable debe estar disponible SIEMPRE, incluso para la primera carga (GET).
+    # Sin esta línea, si el HTML espera 'sintomas_disponibles' para llenar el selector,
+    # Flask daría un error 'NameError' o 'jinja2.exceptions.UndefinedError'.
     sintomas_disponibles = sorted(list(mlb.classes_))
     
     if request.method == "POST":
@@ -187,8 +180,10 @@ def index():
 
         resultado = diagnosticar(nombre, sintomas, edad, sexo, peso, altura, ubicacion, viajes)
 
+    # Ahora 'sintomas_disponibles' siempre se pasa, solucionando el error inicial de carga si se usa en el HTML.
     return render_template("index.html", resultado=resultado, sintomas_disponibles=sintomas_disponibles)
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
