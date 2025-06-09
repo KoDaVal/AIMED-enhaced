@@ -22,34 +22,12 @@
             <div class="mb-3">
                 <label for="sintomas" class="form-label">Síntomas:</label>
                 <select id="sintomas" class="form-select" multiple required>
-                    <option value="fiebre">Fiebre</option>
-                    <option value="tos">Tos</option>
-                    <option value="dolor de cabeza">Dolor de cabeza</option>
-                    <option value="estornudos">Estornudos</option>
-                    <option value="tos seca">Tos seca</option>
-                    <option value="perdida del olfato">Pérdida del ol olfato</option>
-                    <option value="perdida del gusto">Pérdida del gusto</option>
-                    <option value="dificultad para respirar">Dificultad para respirar</option>
-                    <option value="fatiga">Fatiga</option>
-                    <option value="ojos rojos">Ojos rojos</option>
-                    <option value="picazón">Picazón</option>
-                    <option value="congestión nasal">Congestión nasal</option>
-                    <option value="diarrea">Diarrea</option>
-                    <option value="dolor de estómago">Dolor de estómago</option>
-                    <option value="náuseas">Náuseas</option>
-                    <option value="vómitos">Vómitos</option>
-                    <option value="dolor abdominal">Dolor abdominal</option>
-                    <option value="tos con flema">Tos con flema</option>
-                    <option value="dolor en el pecho">Dolor en el pecho</option>
-                    <option value="escalofríos">Escalofríos</option>
-                    <option value="sudor frío">Sudor frío</option>
-                    <option value="mareos">Mareos</option>
-                    <option value="falta de aire">Falta de aire</option>
-                    <option value="dolor muscular">Dolor muscular</option>
-                    <option value="erupción en la piel">Erupción en la piel</option>
-                    <option value="dolor en las articulaciones">Dolor en las articulaciones</option>
-                    <option value="fiebre alta">Fiebre Alta Mayor a 38.9</option>
+                    <!-- Las opciones de síntomas ahora se generan dinámicamente desde app.py -->
+                    {% for sintoma in sintomas_disponibles %}
+                    <option value="{{ sintoma }}">{{ sintoma.capitalize() }}</option>
+                    {% endfor %}
                 </select>
+                <!-- Este campo oculto es crucial para enviar los síntomas seleccionados a Flask -->
                 <input type="hidden" id="sintomas_hidden" name="sintomas">
             </div>
 
