@@ -1,0 +1,94 @@
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Médico</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">🔍 AI-MED – Artificial Intelligence Medical Diagnosis</h1>
+        <p class="text-center">Ingresa tus síntomas y datos para obtener un diagnóstico.</p>
+
+        <form method="POST" class="mt-4">
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre:</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="sintomas" class="form-label">Síntomas:</label>
+                <select id="sintomas" class="form-select" multiple required>
+                    {% for sintoma in sintomas_disponibles %}
+                    <option value="{{ sintoma }}">{{ sintoma.capitalize() }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="sintomas_hidden" name="sintomas">
+            </div>
+
+            <div class="mb-3">
+                <label for="edad" class="form-label">Edad:</label>
+                <input type="number" class="form-control" id="edad" name="edad" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="sexo" class="form-label">Sexo:</label>
+                <select class="form-select" id="sexo" name="sexo" required>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="peso" class="form-label">Peso (kg):</label>
+                <input type="number" step="0.1" class="form-control" id="peso" name="peso" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="altura" class="form-label">Altura (cm):</label>
+                <input type="number" class="form-control" id="altura" name="altura" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="ubicacion" class="form-label">Ubicación (Ciudad/País):</label>
+                <input type="text" class="form-control" id="ubicacion" name="ubicacion" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="viajes" class="form-label">¿Has viajado recientemente? (separado por comas o "ninguno"):</label>
+                <input type="text" class="form-control" id="viajes" name="viajes">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">🔍 Diagnosticar</button>
+        </form>
+
+        {% if resultado %}
+        <div class="mt-4 p-4 border rounded bg-light">
+            <h3>🔍 Resultado del Diagnóstico:</h3>
+            <pre>{{ resultado }}</pre>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+    <script>
+        const choices = new Choices("#sintomas", {
+            removeItemButton: true,
+            searchPlaceholderValue: "Buscar síntomas...",
+            placeholder: true,
+            placeholderValue: "Selecciona síntomas",
+            noResultsText: "No se encontraron síntomas",
+            itemSelectText: "Presiona Enter para seleccionar"
+        });
+
+        document.querySelector("form").addEventListener("submit", function() {
+            const sintomasSeleccionados = choices.getValue(true).map(item => item.value).join(", "); // Asegúrate de obtener solo el valor
+            document.getElementById("sintomas_hidden").value = sintomasSeleccionados;
+        });
+    </script>
+</body>
+</html>
