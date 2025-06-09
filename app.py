@@ -126,9 +126,8 @@ def detectar_brotes_viajes(viajes):
 # -------------------------------------------------------
 
 def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, viajes):
-    # NOTA: sintomas_usuario es la cadena de entrada del formulario.
-    # La corregimos para que la IA la entienda mejor, pero el output seguirá usando esta versión corregida para mostrar.
-    # Si quieres que se muestre la entrada original, necesitarías una variable separada para eso.
+    # La variable sintomas_usuario ya contiene la cadena de síntomas del formulario.
+    # Esta cadena se procesa para que la IA la use para el diagnóstico.
     sintomas_procesados_para_ia = corregir_sintomas(sintomas_usuario) 
     sintomas_numericos = mlb.transform([sintomas_procesados_para_ia])
 
@@ -154,7 +153,7 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
         
         return (
             f"👤 {nombre}, aquí está tu diagnóstico:\n"
-            # Esta línea mostrará los síntomas que fueron "reconocidos" por la función corregir_sintomas.
+            # Esta línea mostrará los síntomas que fueron "reconocidos" y procesados por la IA.
             # Si fuzzywuzzy con score >= 60 no encuentra coincidencias, esta lista puede estar vacía.
             f"📝 Síntomas reconocidos: {', '.join(sintomas_procesados_para_ia)}\n" 
             f"{alertas_brotes}"
@@ -172,10 +171,9 @@ def diagnosticar(nombre, sintomas_usuario, edad, sexo, peso, altura, ubicacion, 
 @app.route("/", methods=["GET", "POST"])
 def index():
     resultado = ""
-    # NOTA: La variable 'sintomas_disponibles' NO se pasa a render_template en la solicitud GET inicial
-    # en esta versión de tu código, lo cual puede causar errores si el HTML espera esa variable.
-    # Si quieres que los síntomas del dropdown se actualicen automáticamente desde app.py,
-    # el HTML y esta función necesitarían ser modificados para pasar esa variable siempre.
+    # Esta línea se ha movido fuera del bloque POST para asegurar que 'sintomas_disponibles'
+    # siempre esté definida y pueda pasarse a la plantilla, incluso en una solicitud GET inicial.
+    sintomas_disponibles = sorted(list(mlb.classes_))
     
     if request.method == "POST":
         nombre = request.form["nombre"]
@@ -189,7 +187,7 @@ def index():
 
         resultado = diagnosticar(nombre, sintomas, edad, sexo, peso, altura, ubicacion, viajes)
 
-    return render_template("index.html", resultado=resultado)
+    return render_template("index.html", resultado=resultado, sintomas_disponibles=sintomas_disponibles)
 
 if __name__ == "__main__":
     app.run(debug=True)
