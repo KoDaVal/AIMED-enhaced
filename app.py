@@ -65,7 +65,8 @@ def corregir_sintomas(sintomas_usuario_input_str):
     """
     Procesa la cadena de síntomas ingresados por el usuario, intentando
     encontrar coincidencias con los síntomas conocidos por el modelo de IA.
-    Solo los síntomas con un score de coincidencia suficiente serán "reconocidos".
+    Solo los síntomas con un score de coincidencia suficiente serán "reconocidos"
+    y se usarán para el diagnóstico interno de la IA.
     """
     sintomas_usuario_parsed = sintomas_usuario_input_str.lower().split(", ")
     sintomas_reconocidos_para_ia = [] # Lista que contendrá los síntomas que la IA 'entiende'
@@ -76,17 +77,15 @@ def corregir_sintomas(sintomas_usuario_input_str):
             continue
 
         # Busca la mejor coincidencia del síntoma del usuario en la base de datos de síntomas del modelo
-        # (mlb.classes_ contiene todos los síntomas únicos extraídos del DataFrame 'data')
         mejor_coincidencia, score = process.extractOne(s_input_cleaned, mlb.classes_)
         
-        # Umbral de coincidencia: si el score es bajo, el síntoma no se considera "reconocido".
-        # Puedes ajustar este umbral (ej. 60, 50) si quieres que la IA sea más o menos estricta
-        # al reconocer síntomas ingresados por el usuario.
-        if score >= 60: # Ajustado a 60 para ser un poco menos estricto que 70
+        # Umbral de coincidencia: si el score es bajo, el síntoma no se considera "reconocido" por la IA.
+        # Ajustado a 60 para ser un poco menos estricto y permitir que más síntomas contribuyan al diagnóstico.
+        if score >= 60: 
             sintomas_reconocidos_para_ia.append(mejor_coincidencia)
-        # Opcional: Para depuración, puedes imprimir los que NO se reconocieron en los logs
+        # Puedes añadir aquí un 'else' para depurar si un síntoma no es reconocido por la IA
         # else:
-            # print(f"DEBUG (corregir_sintomas): '{s_input_cleaned}' no reconocido (score: {score}) - Mejor coincidencia en la base de datos: '{mejor_coincidencia}'")
+            # print(f"DEBUG (corregir_sintomas): '{s_input_cleaned}' NO fue reconocido por la IA (score: {score}) - Mejor coincidencia en la base de datos: '{mejor_coincidencia}'")
 
     return sintomas_reconocidos_para_ia
 
@@ -165,16 +164,21 @@ def detectar_brotes_viajes(viajes):
     return brotes_por_viajes_dict
 # -------------------------------------------------------
 
-def diagnosticar(nombre, sintomas_usuario_raw, edad, sexo, peso, altura, ubicacion, viajes):
+def diagnosticar(nombre, sintomas_usuario_raw_str, edad, sexo, peso, altura, ubicacion, viajes):
     """
     Realiza el diagnóstico completo basándose en los síntomas y datos del usuario.
     """
-    # Procesa y reconoce los síntomas ingresados por el usuario
-    sintomas_que_ia_reconocio = corregir_sintomas(sintomas_usuario_raw)
+    # Procesa y reconoce los síntomas para el modelo de IA.
+    # Esta lista (sintomas_para_el_modelo_ia) es la que se usa para la predicción.
+    sintomas_para_el_modelo_ia = corregir_sintomas(sintomas_usuario_raw_str)
     
     # Transforma los síntomas reconocidos a formato numérico para el modelo
-    # Si la lista de sintomas_que_ia_reconocio está vacía, mlb.transform([]) creará un array de ceros
-    sintomas_numericos = mlb.transform([sintomas_que_ia_reconocio])
+    sintomas_numericos = mlb.transform([sintomas_para_el_modelo_ia])
+
+    # Convertir la cadena de síntomas original del usuario a una lista para mostrar
+    # Esto es lo que el usuario vio en el formulario, independientemente de si la IA lo "reconoció".
+    sintomas_ingresados_por_usuario = [s.strip() for s in sintomas_usuario_raw_str.split(',') if s.strip()]
+
 
     try:
         # Realiza la predicción de la enfermedad
@@ -205,9 +209,8 @@ def diagnosticar(nombre, sintomas_usuario_raw, edad, sexo, peso, altura, ubicaci
         # Construye el mensaje de resultado final
         return (
             f"👤 {nombre}, aquí está tu diagnóstico:\n"
-            # Muestra los síntomas que la IA realmente usó.
-            # Si la lista está vacía, muestra un mensaje claro al usuario.
-            f"📝 Síntomas reconocidos: {', '.join(sintomas_que_ia_reconocio) if sintomas_que_ia_reconocio else 'Ninguno de los síntomas ingresados fue reconocido por la IA con suficiente certeza.'}\n"
+            # Muestra los síntomas EXACTOS que el usuario ingresó en el formulario.
+            f"📝 Síntomas ingresados: {', '.join(sintomas_ingresados_por_usuario) if sintomas_ingresados_por_usuario else 'Ninguno'}\n"
             f"{alertas_brotes}"
             f"📌 Enfermedad probable: {enfermedad_predicha}\n"
             f"ℹ {enfermedad_info['Descripcion']}\n"
@@ -236,7 +239,7 @@ def index():
         # Obtiene los datos del formulario
         nombre = request.form["nombre"]
         # 'sintomas' se recibe como una cadena separada por comas desde el campo oculto
-        sintomas_raw = request.form["sintomas"] 
+        sintomas_raw_del_formulario = request.form["sintomas"] 
         edad = int(request.form["edad"])
         sexo = request.form["sexo"]
         peso = float(request.form["peso"])
@@ -244,8 +247,11 @@ def index():
         ubicacion = request.form["ubicacion"]
         viajes = request.form["viajes"].split(", ") if request.form["viajes"] else []
 
-        # Llama a la función de diagnóstico
-        resultado = diagnosticar(nombre, sintomas_raw, edad, sexo, peso, altura, ubicacion, viajes)
+        # Llama a la función de diagnóstico. 
+        # NOTA: Le pasamos los síntomas RAW del formulario (sintomas_raw_del_formulario)
+        # La función diagnosticar se encargará de pasarlos a corregir_sintomas INTERNAMENTE
+        # para la IA, pero usará la versión RAW para mostrar en el resultado.
+        resultado = diagnosticar(nombre, sintomas_raw_del_formulario, edad, sexo, peso, altura, ubicacion, viajes)
 
     # Renderiza la plantilla index.html, pasando el resultado del diagnóstico
     # y la lista de síntomas disponibles para el selector de Choices.js.
